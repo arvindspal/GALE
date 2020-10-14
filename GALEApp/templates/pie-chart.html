@@ -1,0 +1,28 @@
+<div>
+    <span><b>Top 4 teams in terms of wins</b></span>
+    <canvas id="pie-chart"></canvas>
+</div>
+
+<script>
+    var colors = ['#BADE96', '#82BEF3', '#7272FF', '#F8171B']
+    var config = {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: {{ dataList.top_4_teams.defaults|safe }},
+                backgroundColor: colors,
+                label: 'Wins'
+            }],
+            labels: {{ dataList.top_4_teams.labels|safe }}
+        },
+        options: {
+            responsive: true
+        }
+    };
+    
+    window.onload = function() {
+        var ctx = document.getElementById('pie-chart').getContext('2d');
+        window.myPie = new Chart(ctx, config);
+    };
+
+</script>

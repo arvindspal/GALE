@@ -1,0 +1,29 @@
+<div style="margin: 20 50 20 50;">
+    <div clas="row">
+        <div class="form-group">
+            <select class="season-select form-control">
+                <option value="-1">Please Select a Season</option>
+                {% for season in seasons %}
+                    <option value="{{season}}" {% if selectedSeason == season %} selected="selected" {% endif %}>{{season}}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    {% if selectedSeason > 0 %}
+        <div>
+            <div>
+                <h4>Selected season:{{selectedSeason}}</h4>
+            </div>
+            <div style="display: flex;">
+                <div style="width:50%">
+                    {% include "pie-chart.html" %}
+                </div>
+            
+                <div style="width:50%">
+                    {% include "statistics.html" %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
