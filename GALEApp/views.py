@@ -173,12 +173,25 @@ def get_season_data(request, season):
         # get match IDs for the season..
         match_ids = matches.values_list('id', flat=True).distinct()
 
+        bowler_with_most_runs = []
+        max_runs = 0
         #print(match_ids)
-        #most_runs_given_by_bowler = Deliveries.objects.filter(match_id__in=list(match_ids)) \
-        #                            .annotate(runs_given=sum('total_runs')) \
-        #                            .order_by('-runs_given').first()
+        for match_id in match_ids:
+            deliveries = Deliveries.objects.filter(match_id=match_id)
+            # now group this by bowler..
+            bowler = deliveries.values('bowler') \
+                                .annotate(total_runs_given=Sum('total_runs')) \
+                                .order_by('-total_runs_given').first()
 
-        #print(most_runs_given_by_bowler)
+            if bowler['total_runs_given'] > max_runs:
+                # get the match..
+                match = Matches.objects.get(id=match_id)
+                bowler_with_most_runs.clear()
+                bowler_with_most_runs.append(bowler['bowler'])
+                bowler_with_most_runs.append(bowler['total_runs_given'])
+                bowler_with_most_runs.append(match.team1 + ' VS ' + match.team2 + ' at ' + match.venue)
+                
+                max_runs = bowler['total_runs_given']                 
 
         # Most number of catches by a fielder in a match for the selected season
 
@@ -192,7 +205,8 @@ def get_season_data(request, season):
             'win_by_heighest_wkts': win_by_heighest_wkts,
             'teams_won_toss_and_match': teams_won_toss_and_match,
             'most_matches_by_locations': most_matches_by_locations,
-            'top_4_teams': top_4_teams
+            'top_4_teams': top_4_teams,
+            'bowler_with_most_runs': bowler_with_most_runs
         }
 
         context = {
