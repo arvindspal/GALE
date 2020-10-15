@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'GALEProj.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
-
+'''
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -88,6 +88,17 @@ DATABASES = {
         'PORT': '5432',
         'USER': 'postgres',
         'PASSWORD': 'postgres'
+    }
+}
+'''
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'GALEIPLdb',
+        'HOST': 'galeipl.postgres.database.azure.com',
+        'PORT': '5432',
+        'USER': 'postgres@galeipl',
+        'PASSWORD': 'Password1234!'
     }
 }
 
