@@ -20,6 +20,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from django.db.models import F
 from django.db.models import Sum
+from .utils import *
 
 
 # Create your views here.
@@ -57,39 +58,13 @@ def get_season_data(request, season):
         }
 
         # most number of tosses wins..
-        tosses = matches.values('toss_winner').annotate(toss_wins_count=Count('toss_winner')) \
-                       .order_by('-toss_wins_count').first()
-
-        # there could be more than one team winning the most number of tosses..
-        max_tosses_count = tosses['toss_wins_count']
-        tosses = matches.values('toss_winner').annotate(toss_wins_count=Count('toss_winner')) \
-                       .filter(toss_wins_count=max_tosses_count) \
-                       .order_by('-toss_wins_count')
+        tosses = most_tosses_wins(matches)
         
-
-
         # most number of player of the match awards..
-        most_awards = matches.values('player_of_match').annotate(player_of_match_wins_count=Count('player_of_match')) \
-                       .order_by('-player_of_match_wins_count').first()
-        
-        most_mom = most_awards['player_of_match_wins_count']
-        most_awards = matches.values('player_of_match').annotate(player_of_match_wins_count=Count('player_of_match')) \
-                       .filter(player_of_match_wins_count=most_mom) \
-                       .order_by('-player_of_match_wins_count')
-
-
+        most_awards = most_player_awards(matches)
 
         # max wins by team.
-        wins = matches.values('winner') \
-                       .annotate(wins_count=Count('winner')) \
-                       .order_by('-wins_count').first()
-
-        most_wins = wins['wins_count']
-        wins = matches.values('winner') \
-                       .annotate(wins_count=Count('winner')) \
-                       .filter(wins_count=most_wins) \
-                       .order_by('-wins_count')
-
+        wins = max_wins_by_team(matches)
 
         #Which location has the most number of wins for the top team
         # find out the team which has max wins..
@@ -112,7 +87,6 @@ def get_season_data(request, season):
         else:
             team_percenatge = 0
                     
-        # Which location hosted most number of matches and win % and loss % for the season
         # THIS IS FOR THE MOST NUMBER OF WINNING TEAM
         # find out location which hosted most matches..
         most_matches_by_location = matches.values('venue') \
@@ -127,94 +101,24 @@ def get_season_data(request, season):
         matches_won_at_location = matches.values()
 
         # Which team won by the highest margin of runs  for the season
-        win_by_heighest_runs = matches.filter(win_by_runs__gt=0) \
-                        .values('winner', 'win_by_runs') \
-                        .order_by('-win_by_runs').first()
-
-        heighest_margin_by_run = win_by_heighest_runs['win_by_runs']
-
-        win_by_heighest_runs = matches.filter(win_by_runs__gt=0) \
-                        .values('winner', 'win_by_runs') \
-                        .filter(win_by_runs=heighest_margin_by_run) \
-                        .order_by('-win_by_runs')
+        win_by_heighest_runs = heighest_win_by_runs(matches)
         
         # Which team won by the highest number of wickets for the season
-        win_by_heighest_wkts = matches.filter(win_by_wickets__gt=0) \
-                        .values('winner', 'win_by_wickets') \
-                        .order_by('-win_by_wickets').first()
-
-        highest_wkt_margin = win_by_heighest_wkts['win_by_wickets']
-
-        win_by_heighest_wkts = matches.filter(win_by_wickets__gt=0) \
-                        .values('winner', 'win_by_wickets') \
-                        .filter(win_by_wickets=highest_wkt_margin) \
-                        .order_by('-win_by_wickets')
-
-
+        win_by_heighest_wkts = heighest_win_by_wkts(matches)
+        
         # How many times has a team won the toss and the match
         teams_won_toss_and_match = matches.filter(toss_winner=F('winner')).count()
 
-
-
         #Which location hosted most number of matches and win % and loss % for the season
-        most_matches_by_locations = matches.values('venue') \
-                       .annotate(matches_count=Count('venue')) \
-                       .order_by('-matches_count').first()
-
-        most_match_count = most_matches_by_locations['matches_count']
-
-        most_matches_by_locations = matches.values('venue') \
-                       .annotate(matches_count=Count('venue')) \
-                       .filter(matches_count=most_match_count) \
-                       .order_by('-matches_count')
-
-
+        most_matches_by_locations = location_hosted_most_matches(matches)
+        
         # Which Batsman (or bowler?) gave away the most number of runs in a match for the selected season
         # get match IDs for the season..
-        match_ids = matches.values_list('id', flat=True).distinct()
-
-        bowler_with_most_runs = []
-        max_runs = 0
-        #print(match_ids)
-        for match_id in match_ids:
-            deliveries = Deliveries.objects.filter(match_id=match_id)
-            # now group this by bowler..
-            bowler = deliveries.values('bowler') \
-                                .annotate(total_runs_given=Sum('total_runs')) \
-                                .order_by('-total_runs_given').first()
-
-            if bowler['total_runs_given'] > max_runs:
-                # get the match..
-                match = Matches.objects.get(id=match_id)
-                bowler_with_most_runs.clear()
-                bowler_with_most_runs.append(bowler['bowler'])
-                bowler_with_most_runs.append(bowler['total_runs_given'])
-                bowler_with_most_runs.append(match.team1 + ' VS ' + match.team2 + ' at ' + match.venue)
-                
-                max_runs = bowler['total_runs_given']                 
+        bowler_with_most_runs = most_number_of_runs(matches)
 
         # Most number of catches by a fielder in a match for the selected season
-        most_catches = 0
-        fielder_with_most_catches = []
-        for match_id in match_ids:
-            deliveries = Deliveries.objects.filter(match_id=match_id)
-            # first find out all the dismissal of caught behind..
-            dismissals = deliveries.filter(dismissal_kind='caught')
-            # now group by the fielder..and get the highest catch filder
-            fielder = dismissals.values('fielder') \
-                                .annotate(total_catches=Count('fielder')) \
-                                .order_by('-total_catches').first()
-            if fielder['total_catches'] > most_catches:
-                # get the match..
-                match = Matches.objects.get(id=match_id)
-                fielder_with_most_catches.clear()
-                fielder_with_most_catches.append(fielder['fielder'])
-                fielder_with_most_catches.append(fielder['total_catches'])
-                fielder_with_most_catches.append(match.team1 + ' VS ' + match.team2 + ' at ' + match.venue)
-                
-                most_catches = fielder['total_catches']   
-
-
+        fielder_with_most_catches = most_number_of_catches(matches)
+        
         dataList = {
             'tosses': tosses,
             'most_awards': most_awards,
