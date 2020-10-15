@@ -194,6 +194,26 @@ def get_season_data(request, season):
                 max_runs = bowler['total_runs_given']                 
 
         # Most number of catches by a fielder in a match for the selected season
+        most_catches = 0
+        fielder_with_most_catches = []
+        for match_id in match_ids:
+            deliveries = Deliveries.objects.filter(match_id=match_id)
+            # first find out all the dismissal of caught behind..
+            dismissals = deliveries.filter(dismissal_kind='caught')
+            # now group by the fielder..and get the highest catch filder
+            fielder = dismissals.values('fielder') \
+                                .annotate(total_catches=Count('fielder')) \
+                                .order_by('-total_catches').first()
+            if fielder['total_catches'] > most_catches:
+                # get the match..
+                match = Matches.objects.get(id=match_id)
+                fielder_with_most_catches.clear()
+                fielder_with_most_catches.append(fielder['fielder'])
+                fielder_with_most_catches.append(fielder['total_catches'])
+                fielder_with_most_catches.append(match.team1 + ' VS ' + match.team2 + ' at ' + match.venue)
+                
+                most_catches = fielder['total_catches']   
+
 
         dataList = {
             'tosses': tosses,
@@ -206,7 +226,8 @@ def get_season_data(request, season):
             'teams_won_toss_and_match': teams_won_toss_and_match,
             'most_matches_by_locations': most_matches_by_locations,
             'top_4_teams': top_4_teams,
-            'bowler_with_most_runs': bowler_with_most_runs
+            'bowler_with_most_runs': bowler_with_most_runs,
+            'fielder_with_most_catches': fielder_with_most_catches
         }
 
         context = {
