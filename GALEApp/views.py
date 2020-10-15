@@ -67,7 +67,7 @@ def get_season_data(request, season):
                        .order_by('-toss_wins_count')
         
 
-        
+
         # most number of player of the match awards..
         most_awards = matches.values('player_of_match').annotate(player_of_match_wins_count=Count('player_of_match')) \
                        .order_by('-player_of_match_wins_count').first()
@@ -155,6 +155,20 @@ def get_season_data(request, season):
         teams_won_toss_and_match = matches.filter(toss_winner=F('winner')).count()
 
 
+
+        #Which location hosted most number of matches and win % and loss % for the season
+        most_matches_by_locations = matches.values('venue') \
+                       .annotate(matches_count=Count('venue')) \
+                       .order_by('-matches_count').first()
+
+        most_match_count = most_matches_by_locations['matches_count']
+
+        most_matches_by_locations = matches.values('venue') \
+                       .annotate(matches_count=Count('venue')) \
+                       .filter(matches_count=most_match_count) \
+                       .order_by('-matches_count')
+
+
         # Which Batsman (or bowler?) gave away the most number of runs in a match for the selected season
         # get match IDs for the season..
         match_ids = matches.values_list('id', flat=True).distinct()
@@ -177,6 +191,7 @@ def get_season_data(request, season):
             'win_by_heighest_runs': win_by_heighest_runs,
             'win_by_heighest_wkts': win_by_heighest_wkts,
             'teams_won_toss_and_match': teams_won_toss_and_match,
+            'most_matches_by_locations': most_matches_by_locations,
             'top_4_teams': top_4_teams
         }
 

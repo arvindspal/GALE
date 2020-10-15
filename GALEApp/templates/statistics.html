@@ -66,6 +66,20 @@
 
 <div class="div-margin">
     <div>
+        <span><b>Location hosted most number of matches and win % and loss % for the season:(Question not fully clear)</b></span>
+    </div>
+    <div>
+        {% for location in dataList.most_matches_by_locations %}
+        <span>
+            {{location.venue}}:
+            {{location.matches_count}}
+        </span><br>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="div-margin">
+    <div>
         <span><b>Which team won by the highest margin of runs  for the season:</b></span>
     </div>
     <div>
