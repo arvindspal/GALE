@@ -3,10 +3,12 @@
         <span><b>Team won the most number of tosses in the season:</b></span>
     </div>
     <div>
+        {% for toss in dataList.tosses %}
         <span>
-            {{dataList.tosses.toss_winner}} :
-            {{dataList.tosses.toss_wins_count}}
-        </span>
+            {{toss.toss_winner}} :
+            {{toss.toss_wins_count}}
+        </span><br>
+        {% endfor %}
     </div>
 </div>
 
@@ -15,10 +17,12 @@
         <span><b>Player won the maximum number of Player of the Match awards in the whole season:</b></span>
     </div>
     <div>
+        {% for most_award in dataList.most_awards %}
         <span>
-            {{dataList.most_awards.player_of_match}} :
-            {{dataList.most_awards.player_of_match_wins_count}}
-        </span>
+            {{most_award.player_of_match}} :
+            {{most_award.player_of_match_wins_count}}
+        </span><br>
+        {% endfor %}
     </div>
 </div>
 
@@ -27,10 +31,12 @@
         <span><b>Team won max matches in the whole season:</b></span>
     </div>
     <div>
+        {% for team in dataList.wins %}
         <span>
-            {{dataList.wins.winner}} :
-            {{dataList.wins.wins_count}}
-        </span>
+            {{team.winner}} :
+            {{team.wins_count}}
+        </span><br>
+        {% endfor %}
     </div>
 </div>
 
@@ -63,10 +69,12 @@
         <span><b>Which team won by the highest margin of runs  for the season:</b></span>
     </div>
     <div>
+        {% for team in dataList.win_by_heighest_runs %}
         <span>
-            {{dataList.win_by_heighest_runs.winner}}:
-            {{dataList.win_by_heighest_runs.win_by_runs}}
-        </span>
+            {{team.winner}}:
+            {{team.win_by_runs}}
+        </span><br>
+        {% endfor %}
     </div>
 </div>
 
@@ -75,10 +83,12 @@
         <span><b>Which team won by the highest number of wickets for the season:</b></span>
     </div>
     <div>
+        {% for team in dataList.win_by_heighest_wkts %}
         <span>
-            {{dataList.win_by_heighest_wkts.winner}}:
-            {{dataList.win_by_heighest_wkts.win_by_wickets}}
-        </span>
+            {{team.winner}}:
+            {{team.win_by_wickets}}
+        </span><br>
+        {% endfor %}
     </div>
 </div>
 

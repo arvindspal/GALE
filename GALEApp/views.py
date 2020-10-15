@@ -59,23 +59,46 @@ def get_season_data(request, season):
         # most number of tosses wins..
         tosses = matches.values('toss_winner').annotate(toss_wins_count=Count('toss_winner')) \
                        .order_by('-toss_wins_count').first()
+
+        # there could be more than one team winning the most number of tosses..
+        max_tosses_count = tosses['toss_wins_count']
+        tosses = matches.values('toss_winner').annotate(toss_wins_count=Count('toss_winner')) \
+                       .filter(toss_wins_count=max_tosses_count) \
+                       .order_by('-toss_wins_count')
+        
+
         
         # most number of player of the match awards..
         most_awards = matches.values('player_of_match').annotate(player_of_match_wins_count=Count('player_of_match')) \
                        .order_by('-player_of_match_wins_count').first()
         
-        
+        most_mom = most_awards['player_of_match_wins_count']
+        most_awards = matches.values('player_of_match').annotate(player_of_match_wins_count=Count('player_of_match')) \
+                       .filter(player_of_match_wins_count=most_mom) \
+                       .order_by('-player_of_match_wins_count')
+
+
+
         # max wins by team.
-        # WE CAN USE THE FIRST queryset for this...
         wins = matches.values('winner') \
                        .annotate(wins_count=Count('winner')) \
                        .order_by('-wins_count').first()
 
+        most_wins = wins['wins_count']
+        wins = matches.values('winner') \
+                       .annotate(wins_count=Count('winner')) \
+                       .filter(wins_count=most_wins) \
+                       .order_by('-wins_count')
+
+
         #Which location has the most number of wins for the top team
         # find out the team which has max wins..
-        team = wins['winner']
+        teams = []
+        for r in wins:
+            teams.append(r['winner'])
+        #team = wins['winner']
         # now find out the location which has most wins for this team..
-        venue = matches.filter(winner=team).values('venue', 'winner') \
+        venue = matches.filter(winner__in=list(teams)).values('venue', 'winner') \
                        .annotate(wins_count=Count('venue')) \
                        .order_by('-wins_count').first()
 
@@ -104,10 +127,28 @@ def get_season_data(request, season):
         matches_won_at_location = matches.values()
 
         # Which team won by the highest margin of runs  for the season
-        win_by_heighest_runs = matches.filter(win_by_runs__gt=0).values('winner', 'win_by_runs').order_by('-win_by_runs').first()
+        win_by_heighest_runs = matches.filter(win_by_runs__gt=0) \
+                        .values('winner', 'win_by_runs') \
+                        .order_by('-win_by_runs').first()
+
+        heighest_margin_by_run = win_by_heighest_runs['win_by_runs']
+
+        win_by_heighest_runs = matches.filter(win_by_runs__gt=0) \
+                        .values('winner', 'win_by_runs') \
+                        .filter(win_by_runs=heighest_margin_by_run) \
+                        .order_by('-win_by_runs')
         
         # Which team won by the highest number of wickets for the season
-        win_by_heighest_wkts = matches.filter(win_by_wickets__gt=0).values('winner', 'win_by_wickets').order_by('-win_by_wickets').first()
+        win_by_heighest_wkts = matches.filter(win_by_wickets__gt=0) \
+                        .values('winner', 'win_by_wickets') \
+                        .order_by('-win_by_wickets').first()
+
+        highest_wkt_margin = win_by_heighest_wkts['win_by_wickets']
+
+        win_by_heighest_wkts = matches.filter(win_by_wickets__gt=0) \
+                        .values('winner', 'win_by_wickets') \
+                        .filter(win_by_wickets=highest_wkt_margin) \
+                        .order_by('-win_by_wickets')
 
 
         # How many times has a team won the toss and the match
@@ -119,9 +160,9 @@ def get_season_data(request, season):
         match_ids = matches.values_list('id', flat=True).distinct()
 
         #print(match_ids)
-        most_runs_given_by_bowler = Deliveries.objects.filter(match_id__in=list(match_ids)) \
-                                    .annotate(runs_given=sum('total_runs')) \
-                                    .order_by('-runs_given').first()
+        #most_runs_given_by_bowler = Deliveries.objects.filter(match_id__in=list(match_ids)) \
+        #                            .annotate(runs_given=sum('total_runs')) \
+        #                            .order_by('-runs_given').first()
 
         #print(most_runs_given_by_bowler)
 
