@@ -201,7 +201,9 @@ def get_season_data(request, season):
             'template': 'home',
             'selectedSeason': season
         }
-    return render(request, 'base.html', context)
+        return render(request, 'base.html', context)
+    else:
+        return redirect(home)
 
 
 
