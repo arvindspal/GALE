@@ -7,8 +7,8 @@ from .views import *
 urlpatterns = [
         path('', home, name='home'),
         path('home', home, name='home'),
-        path('season/<int:season>', get_season_data, name='get_season_data'),
-
+        path('api/get-seasons', getSeasons, name='getSeasons'),
+        path('api/get-statistics/<int:season>', getStatistics, name='getStatistics'),
 ]
 
 

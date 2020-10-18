@@ -21,6 +21,7 @@ from rest_framework import status
 from django.db.models import F
 from django.db.models import Sum
 from .utils import *
+from .serializers import *
 
 
 # Create your views here.
@@ -32,39 +33,52 @@ def home(request):
         'template': 'home'
     }
     return render(request, 'base.html', context)
-       
 
-def get_season_data(request, season):
-    season = int(season)
-    seasons = Matches.objects.values_list('season', flat=True).order_by('-season').distinct()
 
-    dataList = []
+@api_view(['GET'])
+def getSeasons(request): 
+    try:
+        seasons = Matches.objects.values_list('season', flat=True).order_by('-season').distinct()
+    except Matches.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    return Response(seasons)
+
+
+@api_view(['GET'])
+def getStatistics(request, season):
+    
+    dataList = {}
     default_items = []
     labels = []
-    if season > 0:
+    try:
+        season = int(season)
         matches = Matches.objects.filter(season=season)
         # top 4 teams in terms of wins..
         teams = matches.values('winner') \
-                       .annotate(wins_count=Count('winner')) \
-                       .order_by('-wins_count')[:4]
+                    .annotate(wins_count=Count('winner')) \
+                    .order_by('-wins_count')[:4]
 
         for team in teams:
             labels.append(team['winner'])
             default_items.append(team['wins_count'])
 
-        top_4_teams = {
+        top_teams = {
             'labels': labels,
             'defaults': default_items
         }
+        dataList['top_teams'] = top_teams
 
         # most number of tosses wins..
-        tosses = most_tosses_wins(matches)
+        tosses = mostTossesWins(matches)
+        dataList['tosses'] = tosses
         
         # most number of player of the match awards..
-        most_awards = most_player_awards(matches)
+        awards = mostAwards(matches)
+        dataList['awards'] = awards
 
         # max wins by team.
-        wins = max_wins_by_team(matches)
+        wins = maxWins(matches)
+        dataList['wins'] = wins
 
         #Which location has the most number of wins for the top team
         # find out the team which has max wins..
@@ -77,73 +91,38 @@ def get_season_data(request, season):
                        .annotate(wins_count=Count('venue')) \
                        .order_by('-wins_count').first()
 
+        dataList['venue'] = venue
         # Which % of teams decided to bat when they won the toss
         # get total number of matches for the season..
-        total_matches = matches.count()
-        number_of_teams_batted_first = matches.filter(toss_decision='bat').count()
-
-        if total_matches > 0:
-            team_percenatge = (number_of_teams_batted_first/total_matches) * 100
-        else:
-            team_percenatge = 0
-                    
-        # THIS IS FOR THE MOST NUMBER OF WINNING TEAM
-        # find out location which hosted most matches..
-        most_matches_by_location = matches.values('venue') \
-                       .annotate(matches_count=Count('venue')) \
-                       .order_by('-matches_count')[:1]
-
-        location = None
-        matches_count = 0
-        for r in most_matches_by_location:
-            location = r['venue']
-            matches_count = r['matches_count']
-        matches_won_at_location = matches.values()
+        percenatge = teamsBattedFirstWhenWonToss(matches)
+        dataList['percenatge'] = percenatge
 
         # Which team won by the highest margin of runs  for the season
-        win_by_heighest_runs = heighest_win_by_runs(matches)
+        runs_margin = heighestWinByRuns(matches)
+        dataList['runs_margin'] = runs_margin
         
         # Which team won by the highest number of wickets for the season
-        win_by_heighest_wkts = heighest_win_by_wkts(matches)
+        wkts_margin = heighestWinByWkts(matches)
+        dataList['wkts_margin'] = wkts_margin
         
         # How many times has a team won the toss and the match
         teams_won_toss_and_match = matches.filter(toss_winner=F('winner')).count()
+        dataList['teams_won_toss_and_match'] = teams_won_toss_and_match
 
         #Which location hosted most number of matches and win % and loss % for the season
-        most_matches_by_locations = location_hosted_most_matches(matches)
+        most_matches_by_locations = locationHostedMostMatches(matches)
+        dataList['most_matches_by_locations'] = most_matches_by_locations
         
         # Which Batsman (or bowler?) gave away the most number of runs in a match for the selected season
         # get match IDs for the season..
-        bowler_with_most_runs = most_number_of_runs(matches)
+        most_runs_given = mostRunsGiven(matches)
+        dataList['most_runs_given'] = most_runs_given
 
         # Most number of catches by a fielder in a match for the selected season
-        fielder_with_most_catches = most_number_of_catches(matches)
-        
-        dataList = {
-            'tosses': tosses,
-            'most_awards': most_awards,
-            'wins': wins,
-            'venue': venue,
-            'team_percenatge': team_percenatge,
-            'win_by_heighest_runs': win_by_heighest_runs,
-            'win_by_heighest_wkts': win_by_heighest_wkts,
-            'teams_won_toss_and_match': teams_won_toss_and_match,
-            'most_matches_by_locations': most_matches_by_locations,
-            'top_4_teams': top_4_teams,
-            'bowler_with_most_runs': bowler_with_most_runs,
-            'fielder_with_most_catches': fielder_with_most_catches
-        }
+        most_catches = mostCatches(matches)
+        dataList['most_catches'] = most_catches
 
-        context = {
-            'seasons': seasons,
-            'dataList': dataList,
-            'template': 'home',
-            'selectedSeason': season
-        }
-        return render(request, 'base.html', context)
-    else:
-        return redirect(home)
-
-
-
+    except Matches.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    return Response(dataList)
 
